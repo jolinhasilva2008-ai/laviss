@@ -23,7 +23,6 @@
       text-align: center;
       min-width: 280px;
     }
-    /* Estilo do Botão */
     .btn {
       padding: 15px 30px;
       font-size: 18px;
@@ -34,6 +33,7 @@
       color: white;
       transition: background-color 0.3s;
       width: 100%;
+      user-select: none;
     }
     .btn-off { background-color: #e74c3c; } /* Vermelho */
     .btn-on { background-color: #2ecc71; }  /* Verde */
@@ -44,6 +44,7 @@
     }
   </style>
 
+  <!-- SDKs Compat do Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
@@ -51,58 +52,63 @@
 
   <div class="card">
     <h2>Controle de LED via ESP32</h2>
-    <button id="toggleBtn" class="btn btn-off" onclick="alternarLED()">LIGAR</button>
+    <button id="toggleBtn" class="btn btn-off">LIGAR</button>
     <div id="status">Estado atual: DESLIGADO</div>
   </div>
 
   <script>
-    // Substitua pelas credenciais do seu Firebase Console
     const firebaseConfig = {
-       apiKey: "AIzaSyBMQndhZQ-zYipDO-j3C6Ep2_WCfByMWl0",
-  authDomain: "casa-adaptada.firebaseapp.com",
-  databaseURL: "https://casa-adaptada-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "casa-adaptada",
-  storageBucket: "casa-adaptada.firebasestorage.app",
-  messagingSenderId: "1009317352215",
-  appId: "1:1009317352215:web:2de4d3e3008727b2eadd52",
-  measurementId: "G-Z7HTXW85H1"
+      apiKey: "AIzaSyBMQndhZQ-zYipDO-j3C6Ep2_WCfByMWl0",
+      authDomain: "casa-adaptada.firebaseapp.com",
+      databaseURL: "https://casa-adaptada-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "casa-adaptada",
+      storageBucket: "casa-adaptada.firebasestorage.app",
+      messagingSenderId: "1009317352215",
+      appId: "1:1009317352215:web:2de4d3e3008727b2eadd52",
+      measurementId: "G-Z7HTXW85H1"
     };
 
     let estadoAtual = 0;
-    let database, ledRef;
+    let ledRef = null;
 
-    // Tenta inicializar o Firebase
     try {
-      firebase.initializeApp(firebaseConfig);
-      database = firebase.database();
-      ledRef = database.ref('led_status');
+      if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        ledRef = database.ref('led_status');
 
-      // Escuta mudanças em tempo real no banco
-      ledRef.on('value', (snapshot) => {
-        estadoAtual = snapshot.val() || 0;
-        atualizarInterface();
-      });
+        // Escuta mudanças em tempo real no banco
+        ledRef.on('value', (snapshot) => {
+          const val = snapshot.val();
+          estadoAtual = (val === 1 || val === "1") ? 1 : 0;
+          atualizarInterface(estadoAtual);
+        });
+      }
     } catch (erro) {
-      console.error("Erro ao conectar ao Firebase:", erro);
+      console.error("Erro ao conectar com o Firebase:", erro);
       document.getElementById('status').textContent = "Erro na configuração do Firebase";
     }
 
-    function alternarLED() {
-      const novoEstado = estadoAtual === 1 ? 0 : 1;
+    // Escutador direto de clique no botão
+    const btn = document.getElementById('toggleBtn');
+    btn.addEventListener('click', () => {
+      // Inverte o estado (0 vira 1, 1 vira 0)
+      estadoAtual = estadoAtual === 1 ? 0 : 1;
+
+      // 1. Atualiza a tela imediatamente ao clicar
+      atualizarInterface(estadoAtual);
+
+      // 2. Grava no Firebase Realtime Database
       if (ledRef) {
-        ledRef.set(novoEstado);
-      } else {
-        // Fallback local se o Firebase não estiver configurado
-        estadoAtual = novoEstado;
-        atualizarInterface();
+        ledRef.set(estadoAtual).catch((err) => {
+          console.error("Erro ao gravar no Firebase:", err);
+        });
       }
-    }
+    });
 
-    function atualizarInterface() {
-      const btn = document.getElementById('toggleBtn');
+    function atualizarInterface(estado) {
       const statusText = document.getElementById('status');
-
-      if (estadoAtual === 1) {
+      if (estado === 1) {
         btn.textContent = 'DESLIGAR';
         btn.className = 'btn btn-on';
         statusText.textContent = 'Estado atual: LIGADO';

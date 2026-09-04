@@ -1,1 +1,246 @@
 # laviss
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Controle do LED - ESP32</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #1f2937;
+            width: 350px;
+            padding: 40px;
+
+            border-radius: 20px;
+            text-align: center;
+
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .status-text {
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+
+        #status {
+            font-weight: bold;
+        }
+
+        .led {
+            width: 80px;
+            height: 80px;
+
+            border-radius: 50%;
+
+            margin: 20px auto 30px;
+
+            transition: 0.3s;
+        }
+
+        .led.desligado {
+            background: #374151;
+            box-shadow: 0 0 5px #000;
+        }
+
+        .led.ligado {
+            background: #22c55e;
+
+            box-shadow:
+                0 0 15px #22c55e,
+                0 0 40px #22c55e,
+                0 0 70px #22c55e;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+
+            border: none;
+            border-radius: 10px;
+
+            background: #22c55e;
+            color: white;
+
+            font-size: 18px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.03);
+        }
+
+        button.desligar {
+            background: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Controle do LED</h1>
+
+        <p class="status-text">
+            Status do LED:
+            <span id="status">DESLIGADO</span>
+        </p>
+
+        <div id="led" class="led desligado"></div>
+
+        <button id="botao">
+            LIGAR
+        </button>
+
+    </div>
+
+
+    <!-- Firebase -->
+    <script type="module">
+
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+        import {
+            getDatabase,
+            ref,
+            set,
+            onValue
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+
+        // CONFIGURAÇÃO DO FIREBASE
+
+        const firebaseConfig = {
+
+            apiKey: "AIzaSyBMQndhZQ-zYipDO-j3C6Ep2_WCfByMWl0",
+
+            authDomain: "casa-adaptada.firebaseapp.com",
+
+            databaseURL: "https://casa-adaptada-default-rtdb.europe-west1.firebasedatabase.app",
+
+            projectId: "casa-adaptada",
+
+            storageBucket: "casa-adaptada.firebasestorage.app",
+
+            messagingSenderId: "1009317352215",
+
+            appId: "1:1009317352215:web:2de4d3e3008727b2eadd52",
+
+            measurementId: "G-Z7HTXW85H1"
+        };
+
+
+        // Inicializa o Firebase
+
+        const app = initializeApp(firebaseConfig);
+
+        const database = getDatabase(app);
+
+
+        // Referência ao LED no Firebase
+
+        const ledRef = ref(database, "led");
+
+
+        // Elementos da página
+
+        const botao = document.getElementById("botao");
+
+        const status = document.getElementById("status");
+
+        const led = document.getElementById("led");
+
+
+        // Botão LIGAR / DESLIGAR
+
+        botao.addEventListener("click", async () => {
+
+            onValue(ledRef, (snapshot) => {
+
+                const estadoAtual = snapshot.val() === true;
+
+                const novoEstado = !estadoAtual;
+
+                set(ledRef, novoEstado);
+
+            }, {
+                onlyOnce: true
+            });
+
+        });
+
+
+        // Recebe o estado do Firebase
+
+        onValue(ledRef, (snapshot) => {
+
+            const estado = snapshot.val() === true;
+
+
+            if (estado) {
+
+                // LED LIGADO
+
+                status.innerText = "LIGADO";
+
+                led.classList.remove("desligado");
+                led.classList.add("ligado");
+
+                botao.innerText = "DESLIGAR";
+
+                botao.classList.add("desligar");
+
+            } else {
+
+                // LED DESLIGADO
+
+                status.innerText = "DESLIGADO";
+
+                led.classList.remove("ligado");
+                led.classList.add("desligado");
+
+                botao.innerText = "LIGAR";
+
+                botao.classList.remove("desligar");
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>
+```

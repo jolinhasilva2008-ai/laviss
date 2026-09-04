@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de LED - ESP32</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f4f4f9;
+      margin: 0;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .btn {
+      padding: 15px 30px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    .btn-off { background-color: #e74c3c; }
+    .btn-on { background-color: #2ecc71; }
+    #status {
+      margin-top: 15px;
+      font-size: 16px;
+      color: #555;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Controle de LED via ESP32</h2>
+    <button id="toggleBtn" class="btn btn-off" onclick="alternarLED()">LIGAR</button>
+    <div id="status">Estado atual: DESLIGADO</div>
+  </div>
+
+  <script>
+    // Configurações do seu projeto no Firebase Console
+    const firebaseConfig = {
+     apiKey: "AIzaSyBMQndhZQ-zYipDO-j3C6Ep2_WCfByMWl0",
+  authDomain: "casa-adaptada.firebaseapp.com",
+  databaseURL: "https://casa-adaptada-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "casa-adaptada",
+  storageBucket: "casa-adaptada.firebasestorage.app",
+  messagingSenderId: "1009317352215",
+  appId: "1:1009317352215:web:2de4d3e3008727b2eadd52",
+  measurementId: "G-Z7HTXW85H1"
+    };
+
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const ledRef = database.ref('led_status');
+
+    let estadoAtual = 0;
+
+    // Sincroniza a interface com o valor real do banco
+    ledRef.on('value', (snapshot) => {
+      estadoAtual = snapshot.val() || 0;
+      atualizarInterface();
+    });
+
+    function alternarLED() {
+      const novoEstado = estadoAtual === 1 ? 0 : 1;
+      ledRef.set(novoEstado);
+    }
+
+    function atualizarInterface() {
+      const btn = document.getElementById('toggleBtn');
+      const statusText = document.getElementById('status');
+
+      if (estadoAtual === 1) {
+        btn.textContent = 'DESLIGAR';
+        btn.className = 'btn btn-on';
+        statusText.textContent = 'Estado atual: LIGADO';
+      } else {
+        btn.textContent = 'LIGAR';
+        btn.className = 'btn btn-off';
+        statusText.textContent = 'Estado atual: DESLIGADO';
+      }
+    }
+  </script>
+</body>
+</html>
